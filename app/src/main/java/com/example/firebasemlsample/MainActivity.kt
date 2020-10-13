@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -11,6 +12,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.firebase.ml.vision.FirebaseVision
 import com.google.firebase.ml.vision.common.FirebaseVisionImage
 import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
@@ -32,6 +34,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<PreviewView>(R.id.previewView)
     }
 
+    private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -41,6 +45,8 @@ class MainActivity : AppCompatActivity() {
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
+
+        setUpBottomSheet()
     }
 
     override fun onRequestPermissionsResult(
@@ -127,6 +133,7 @@ class MainActivity : AppCompatActivity() {
                     detector.processImage(image)
                         .addOnSuccessListener { firebaseVisionText ->
                             Log.d(TAG, "recognized text = ${firebaseVisionText.text}")
+                            showBottomSheet(firebaseVisionText.text)
                             imageProxy.close()
                         }
                         .addOnFailureListener { e ->
@@ -150,6 +157,41 @@ class MainActivity : AppCompatActivity() {
         180 -> FirebaseVisionImageMetadata.ROTATION_180
         270 -> FirebaseVisionImageMetadata.ROTATION_270
         else -> throw Exception("Rotation must be 0, 90, 180, 270.")
+    }
+
+    private fun setUpBottomSheet() {
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
+        bottomSheetBehavior.addBottomSheetCallback(
+            object : BottomSheetBehavior.BottomSheetCallback() {
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
+
+                    when (newState) {
+                        BottomSheetBehavior.STATE_HIDDEN -> {
+                        }
+                        BottomSheetBehavior.STATE_COLLAPSED -> {
+                        }
+                        BottomSheetBehavior.STATE_EXPANDED -> {
+                        }
+                        BottomSheetBehavior.STATE_HALF_EXPANDED -> {
+                        }
+                        BottomSheetBehavior.STATE_DRAGGING -> {
+                        }
+                        BottomSheetBehavior.STATE_SETTLING -> {
+                        }
+                        else -> "not defined state"
+                    }
+                }
+
+                override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                }
+            })
+
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+    }
+
+    private fun showBottomSheet(text: String) {
+        resultTextView.text = text
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
     companion object {
