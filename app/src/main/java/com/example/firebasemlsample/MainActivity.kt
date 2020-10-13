@@ -11,9 +11,14 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.firebase.ml.vision.FirebaseVision
+import com.google.firebase.ml.vision.common.FirebaseVisionImage
+import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
+import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.concurrent.Executors
 
+@androidx.camera.core.ExperimentalGetImage
 class MainActivity : AppCompatActivity() {
 
     // CameraX variables
@@ -105,7 +110,31 @@ class MainActivity : AppCompatActivity() {
         imageCapture.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(imageProxy: ImageProxy) {
                 Log.d(TAG, "onCaptureSuccess")
-                imageProxy.close()
+                val mediaImage = imageProxy.image
+                mediaImage?.let {
+                    val image = FirebaseVisionImage.fromMediaImage(
+                        it,
+                        degreesToFirebaseRotation(imageProxy.imageInfo.rotationDegrees)
+                    )
+                    // Pass image to an ML Vision API
+
+                    // ヒントを与える
+                    val options = FirebaseVisionCloudTextRecognizerOptions.Builder()
+                        .setLanguageHints(listOf("ja"))
+                        .build()
+                    val detector = FirebaseVision.getInstance().getCloudTextRecognizer(options)
+
+                    detector.processImage(image)
+                        .addOnSuccessListener { firebaseVisionText ->
+                            Log.d(TAG, "recognized text = ${firebaseVisionText.text}")
+                            imageProxy.close()
+                        }
+                        .addOnFailureListener { e ->
+                            Log.d(TAG, "failed recognizing: errorMessage=${e.message}")
+                            e.printStackTrace()
+                            imageProxy.close()
+                        }
+                }
             }
 
             override fun onError(exception: ImageCaptureException) {
@@ -113,6 +142,14 @@ class MainActivity : AppCompatActivity() {
                 exception.printStackTrace()
             }
         })
+    }
+
+    private fun degreesToFirebaseRotation(degrees: Int): Int = when (degrees) {
+        0 -> FirebaseVisionImageMetadata.ROTATION_0
+        90 -> FirebaseVisionImageMetadata.ROTATION_90
+        180 -> FirebaseVisionImageMetadata.ROTATION_180
+        270 -> FirebaseVisionImageMetadata.ROTATION_270
+        else -> throw Exception("Rotation must be 0, 90, 180, 270.")
     }
 
     companion object {
