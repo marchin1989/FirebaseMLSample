@@ -6,19 +6,22 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import kotlinx.android.synthetic.main.activity_main.*
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
     // CameraX variables
     private lateinit var preview: Preview
     private lateinit var camera: Camera
+
+    private lateinit var imageCapture: ImageCapture
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
 
     private val previewView by lazy {
         findViewById<PreviewView>(R.id.previewView)
@@ -77,6 +80,8 @@ class MainActivity : AppCompatActivity() {
     private fun bindPreview(cameraProvider: ProcessCameraProvider) {
         preview = Preview.Builder().build()
 
+        imageCapture = ImageCapture.Builder().build()
+
         val cameraSelector =
             if (cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA))
                 CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
@@ -84,13 +89,30 @@ class MainActivity : AppCompatActivity() {
         try {
             cameraProvider.unbindAll()
 
-            camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview)
+            camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+            recognizeButton.setOnClickListener {
+                onClickRecognize()
+            }
 
             // Attach the preview to preview view
             preview.setSurfaceProvider(previewView.surfaceProvider)
         } catch (exc: Exception) {
             Log.e(TAG, "Use case binding failed", exc)
         }
+    }
+
+    private fun onClickRecognize() {
+        imageCapture.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(imageProxy: ImageProxy) {
+                Log.d(TAG, "onCaptureSuccess")
+                imageProxy.close()
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                Log.d(TAG, "onError: errorMessage=${exception.message}")
+                exception.printStackTrace()
+            }
+        })
     }
 
     companion object {
