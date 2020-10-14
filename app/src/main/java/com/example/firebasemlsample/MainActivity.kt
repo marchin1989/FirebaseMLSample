@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity() {
         detector.processImage(FirebaseVisionImage.fromBitmap(bitmap))
             .addOnSuccessListener { firebaseVisionText ->
                 Log.d(TAG, "sucess text recognition: recognizedText = ${firebaseVisionText.text}")
-                showResultOnBottomSheet(firebaseVisionText.text, photoFile)
+                showResultOnBottomSheet(firebaseVisionText.text, photoFile, RecogniserType.TEXT)
             }
             .addOnFailureListener { e ->
                 Log.d(TAG, "failed text recognition: errorMessage=${e.message}")
@@ -193,7 +193,8 @@ class MainActivity : AppCompatActivity() {
                     labels.joinToString("\n") {
                         "text: ${it.text}\nentityId: ${it.entityId}\nconfidence: ${it.confidence}\n"
                     },
-                    photoFile
+                    photoFile,
+                    RecogniserType.LABEL
                 )
             }
             .addOnFailureListener { e ->
@@ -217,7 +218,8 @@ class MainActivity : AppCompatActivity() {
                     landmarks.joinToString("\n") {
                         "landmarkName: ${it.landmark}\nentityId: ${it.entityId}\nconfidence: ${it.confidence}\n"
                     },
-                    photoFile
+                    photoFile,
+                    RecogniserType.LANDMARK
                 )
             }
             .addOnFailureListener { e ->
@@ -256,8 +258,13 @@ class MainActivity : AppCompatActivity() {
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
     }
 
-    private fun showResultOnBottomSheet(text: String, photoFile: File) {
-        resultTextView.text = text
+    private fun showResultOnBottomSheet(
+        resultText: String,
+        photoFile: File,
+        recogniserType: RecogniserType,
+    ) {
+        topTitle.text = "Result of ${recogniserType.labelText}"
+        resultTextView.text = resultText
         Glide.with(inputImageView).load(photoFile).into(inputImageView as ImageView)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
