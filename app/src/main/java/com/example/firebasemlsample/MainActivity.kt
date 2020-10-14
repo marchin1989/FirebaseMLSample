@@ -169,7 +169,7 @@ class MainActivity : AppCompatActivity() {
         val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
         detector.processImage(FirebaseVisionImage.fromBitmap(bitmap))
             .addOnSuccessListener { firebaseVisionText ->
-                Log.d(TAG, "recognized text = ${firebaseVisionText.text}")
+                Log.d(TAG, "sucess text recognition: recognizedText = ${firebaseVisionText.text}")
                 showResultOnBottomSheet(firebaseVisionText.text, photoFile)
             }
             .addOnFailureListener { e ->
@@ -188,9 +188,10 @@ class MainActivity : AppCompatActivity() {
         FirebaseVision.getInstance().cloudImageLabeler
             .processImage(FirebaseVisionImage.fromBitmap(bitmap))
             .addOnSuccessListener { labels ->
+                Log.d(TAG, "success image labeling: labelsSize=${labels.size}")
                 showResultOnBottomSheet(
                     labels.joinToString("\n") {
-                        "text: ${it.text}\nentityId: ${it.entityId}\nconfidence${it.confidence}\n"
+                        "text: ${it.text}\nentityId: ${it.entityId}\nconfidence: ${it.confidence}\n"
                     },
                     photoFile
                 )
@@ -207,7 +208,22 @@ class MainActivity : AppCompatActivity() {
      * https://firebase.google.com/docs/ml/android/recognize-landmarks
      */
     private fun processImageByCloudLandmarkDetector(photoFile: File) {
-        // TODO
+        val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
+        FirebaseVision.getInstance().visionCloudLandmarkDetector
+            .detectInImage(FirebaseVisionImage.fromBitmap(bitmap))
+            .addOnSuccessListener { landmarks ->
+                Log.d(TAG, "success landmark recognition: landmarksSize=${landmarks.size}")
+                showResultOnBottomSheet(
+                    landmarks.joinToString("\n") {
+                        "landmarkName: ${it.landmark}\nentityId: ${it.entityId}\nconfidence: ${it.confidence}\n"
+                    },
+                    photoFile
+                )
+            }
+            .addOnFailureListener { e ->
+                Log.d(TAG, "failed landmark recognition: errorMessage=${e.message}")
+                e.printStackTrace()
+            }
     }
 
     private fun setUpBottomSheet() {
