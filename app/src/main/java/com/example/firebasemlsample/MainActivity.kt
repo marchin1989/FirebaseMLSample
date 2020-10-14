@@ -15,6 +15,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.firebase.ml.vision.FirebaseVision
@@ -55,6 +56,8 @@ class MainActivity : AppCompatActivity() {
 
         setUpBottomSheet()
 
+        progressBar.isVisible = false
+
         recognizeButton.setOnClickListener {
             onClickRecognize()
         }
@@ -66,6 +69,14 @@ class MainActivity : AppCompatActivity() {
         viewModel.recognizerType.observe(this) {
             changeRecognizerTypeButton.text = it.labelText
         }
+    }
+
+    override fun onBackPressed() {
+        if (isBottomSheetShown()) {
+            hideBottomSheet()
+            return
+        }
+        super.onBackPressed()
     }
 
     override fun onRequestPermissionsResult(
@@ -129,6 +140,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onClickRecognize() {
+        onRecognitionStarted()
+
         // 画像を保存する
         // https://developer.android.com/training/camerax/take-photo#implementation
         val photoFile = File(externalMediaDirs.first(), "${System.currentTimeMillis()}.jpg")
@@ -263,11 +276,32 @@ class MainActivity : AppCompatActivity() {
         photoFile: File,
         recogniserType: RecogniserType,
     ) {
+        onRecognitionFinished()
+
         topTitle.text = "Result of ${recogniserType.labelText}"
         resultTextView.text = resultText
         Glide.with(inputImageView).load(photoFile).into(inputImageView as ImageView)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
+
+    private fun onRecognitionStarted() {
+        progressBar.isVisible = true
+        recognizeButton.isEnabled = false
+        changeRecognizerTypeButton.isEnabled = false
+    }
+
+    private fun onRecognitionFinished() {
+        progressBar.isVisible = false
+        recognizeButton.isEnabled = true
+        changeRecognizerTypeButton.isEnabled = true
+    }
+
+    private fun isBottomSheetShown() = bottomSheetBehavior.state != BottomSheetBehavior.STATE_HIDDEN
+
+    private fun hideBottomSheet() {
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+    }
+
 
     companion object {
         private const val TAG = "MainActivity"
