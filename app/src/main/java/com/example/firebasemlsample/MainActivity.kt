@@ -154,6 +154,11 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
+    /**
+     * text recognition by ML Vision Api.
+     *
+     * https://firebase.google.com/docs/ml/android/recognize-text
+     */
     private fun processImageByCloudTextRecognizer(photoFile: File) {
         // ヒントを与える
         val options = FirebaseVisionCloudTextRecognizerOptions.Builder()
@@ -173,6 +178,11 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    /**
+     * image labeling by ML Vision Api.
+     *
+     * https://firebase.google.com/docs/ml/android/label-images
+     */
     private fun processImageByCloudLabelDetector(photoFile: File) {
         val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
         FirebaseVision.getInstance().cloudImageLabeler
@@ -191,6 +201,11 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    /**
+     * landmark recognition by ML Vision Api.
+     *
+     * https://firebase.google.com/docs/ml/android/recognize-landmarks
+     */
     private fun processImageByCloudLandmarkDetector(photoFile: File) {
         // TODO
     }
