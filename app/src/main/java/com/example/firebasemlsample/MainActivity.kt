@@ -168,13 +168,27 @@ class MainActivity : AppCompatActivity() {
                 showResultOnBottomSheet(firebaseVisionText.text, photoFile)
             }
             .addOnFailureListener { e ->
-                Log.d(TAG, "failed recognizing: errorMessage=${e.message}")
+                Log.d(TAG, "failed text recognition: errorMessage=${e.message}")
                 e.printStackTrace()
             }
     }
 
     private fun processImageByCloudLabelDetector(photoFile: File) {
-        // TODO
+        val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
+        FirebaseVision.getInstance().cloudImageLabeler
+            .processImage(FirebaseVisionImage.fromBitmap(bitmap))
+            .addOnSuccessListener { labels ->
+                showResultOnBottomSheet(
+                    labels.joinToString("\n") {
+                        "text: ${it.text}\nentityId: ${it.entityId}\nconfidence${it.confidence}\n"
+                    },
+                    photoFile
+                )
+            }
+            .addOnFailureListener { e ->
+                Log.d(TAG, "failed image labeling: errorMessage=${e.message}")
+                e.printStackTrace()
+            }
     }
 
     private fun processImageByCloudLandmarkDetector(photoFile: File) {
@@ -213,7 +227,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showResultOnBottomSheet(text: String, photoFile: File) {
         resultTextView.text = text
-        Glide.with(capturedImageView).load(photoFile).into(capturedImageView as ImageView)
+        Glide.with(inputImageView).load(photoFile).into(inputImageView as ImageView)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
