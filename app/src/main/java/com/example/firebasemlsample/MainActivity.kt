@@ -140,7 +140,11 @@ class MainActivity : AppCompatActivity() {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     Log.d(TAG, "onImageSaved")
                     // Pass image to an ML Vision API
-                    processImageByCloudTextRecognizer(photoFile)
+                    when (viewModel.recognizerType.value) {
+                        RecogniserType.TEXT -> processImageByCloudTextRecognizer(photoFile)
+                        RecogniserType.LABEL -> processImageByCloudLabelDetector(photoFile)
+                        RecogniserType.LANDMARK -> processImageByCloudLandmarkDetector(photoFile)
+                    }
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -167,6 +171,14 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "failed recognizing: errorMessage=${e.message}")
                 e.printStackTrace()
             }
+    }
+
+    private fun processImageByCloudLabelDetector(photoFile: File) {
+        // TODO
+    }
+
+    private fun processImageByCloudLandmarkDetector(photoFile: File) {
+        // TODO
     }
 
     private fun setUpBottomSheet() {
