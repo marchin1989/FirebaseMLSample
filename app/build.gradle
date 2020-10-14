@@ -43,6 +43,16 @@ dependencies {
 
     implementation "com.google.android.material:material:1.2.1"
 
+    // ktx
+    implementation "androidx.fragment:fragment-ktx:1.2.5"
+
+    // Android architecture
+    def lifecycle_version = "2.2.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
+
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:25.12.0')
     implementation 'com.google.firebase:firebase-ml-vision'

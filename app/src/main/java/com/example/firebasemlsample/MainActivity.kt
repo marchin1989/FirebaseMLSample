@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -40,6 +41,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
 
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -51,6 +54,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         setUpBottomSheet()
+
+        recognizeButton.setOnClickListener {
+            onClickRecognize()
+        }
+
+        changeRecognizerTypeButton.setOnClickListener {
+            viewModel.changeNextRecognizerType()
+        }
+
+        viewModel.recognizerType.observe(this) {
+            changeRecognizerTypeButton.text = it.labelText
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -105,9 +120,6 @@ class MainActivity : AppCompatActivity() {
             cameraProvider.unbindAll()
 
             camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-            recognizeButton.setOnClickListener {
-                onClickRecognize()
-            }
 
             // Attach the preview to preview view
             preview.setSurfaceProvider(previewView.surfaceProvider)
