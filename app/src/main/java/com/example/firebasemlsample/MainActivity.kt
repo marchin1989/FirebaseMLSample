@@ -2,6 +2,8 @@ package com.example.firebasemlsample
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -15,9 +17,9 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.firebase.ml.vision.FirebaseVision
 import com.google.firebase.ml.vision.common.FirebaseVisionImage
-import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
 import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
 import java.util.concurrent.Executors
 
 @androidx.camera.core.ExperimentalGetImage
@@ -113,50 +115,45 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onClickRecognize() {
-        imageCapture.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {
-            override fun onCaptureSuccess(imageProxy: ImageProxy) {
-                Log.d(TAG, "onCaptureSuccess")
-                val mediaImage = imageProxy.image
-                mediaImage?.let {
-                    val image = FirebaseVisionImage.fromMediaImage(
-                        it,
-                        degreesToFirebaseRotation(imageProxy.imageInfo.rotationDegrees)
-                    )
-                    // Pass image to an ML Vision API
-
-                    // ヒントを与える
-                    val options = FirebaseVisionCloudTextRecognizerOptions.Builder()
-                        .setLanguageHints(listOf("ja"))
-                        .build()
-                    val detector = FirebaseVision.getInstance().getCloudTextRecognizer(options)
-
-                    detector.processImage(image)
-                        .addOnSuccessListener { firebaseVisionText ->
-                            Log.d(TAG, "recognized text = ${firebaseVisionText.text}")
-                            showBottomSheet(firebaseVisionText.text)
-                            imageProxy.close()
-                        }
-                        .addOnFailureListener { e ->
-                            Log.d(TAG, "failed recognizing: errorMessage=${e.message}")
-                            e.printStackTrace()
-                            imageProxy.close()
-                        }
+        // 画像を保存する
+        // https://developer.android.com/training/camerax/take-photo#implementation
+        val photoFile = File(externalMediaDirs.first(), "${System.currentTimeMillis()}.jpg")
+        val outputFileOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+        imageCapture.takePicture(
+            outputFileOptions,
+            cameraExecutor,
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    Log.d(TAG, "onImageSaved")
+                    BitmapFactory.decodeFile(photoFile.absolutePath)?.let { bitmap ->
+                        // Pass image to an ML Vision API
+                        processImageByCloudTextRecognizer(bitmap)
+                    }
                 }
-            }
 
-            override fun onError(exception: ImageCaptureException) {
-                Log.d(TAG, "onError: errorMessage=${exception.message}")
-                exception.printStackTrace()
-            }
-        })
+                override fun onError(exception: ImageCaptureException) {
+                    Log.d(TAG, "onError: errorMessage=${exception.message}")
+                    exception.printStackTrace()
+                }
+            })
     }
 
-    private fun degreesToFirebaseRotation(degrees: Int): Int = when (degrees) {
-        0 -> FirebaseVisionImageMetadata.ROTATION_0
-        90 -> FirebaseVisionImageMetadata.ROTATION_90
-        180 -> FirebaseVisionImageMetadata.ROTATION_180
-        270 -> FirebaseVisionImageMetadata.ROTATION_270
-        else -> throw Exception("Rotation must be 0, 90, 180, 270.")
+    private fun processImageByCloudTextRecognizer(bitmap: Bitmap) {
+        // ヒントを与える
+        val options = FirebaseVisionCloudTextRecognizerOptions.Builder()
+            .setLanguageHints(listOf("ja"))
+            .build()
+        val detector = FirebaseVision.getInstance().getCloudTextRecognizer(options)
+
+        detector.processImage(FirebaseVisionImage.fromBitmap(bitmap))
+            .addOnSuccessListener { firebaseVisionText ->
+                Log.d(TAG, "recognized text = ${firebaseVisionText.text}")
+                showResultOnBottomSheet(firebaseVisionText.text)
+            }
+            .addOnFailureListener { e ->
+                Log.d(TAG, "failed recognizing: errorMessage=${e.message}")
+                e.printStackTrace()
+            }
     }
 
     private fun setUpBottomSheet() {
@@ -189,7 +186,7 @@ class MainActivity : AppCompatActivity() {
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
     }
 
-    private fun showBottomSheet(text: String) {
+    private fun showResultOnBottomSheet(text: String) {
         resultTextView.text = text
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
