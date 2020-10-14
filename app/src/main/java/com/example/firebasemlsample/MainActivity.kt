@@ -2,11 +2,11 @@ package com.example.firebasemlsample
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -14,6 +14,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.firebase.ml.vision.FirebaseVision
 import com.google.firebase.ml.vision.common.FirebaseVisionImage
@@ -125,10 +126,8 @@ class MainActivity : AppCompatActivity() {
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     Log.d(TAG, "onImageSaved")
-                    BitmapFactory.decodeFile(photoFile.absolutePath)?.let { bitmap ->
-                        // Pass image to an ML Vision API
-                        processImageByCloudTextRecognizer(bitmap)
-                    }
+                    // Pass image to an ML Vision API
+                    processImageByCloudTextRecognizer(photoFile)
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -138,17 +137,18 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
-    private fun processImageByCloudTextRecognizer(bitmap: Bitmap) {
+    private fun processImageByCloudTextRecognizer(photoFile: File) {
         // ヒントを与える
         val options = FirebaseVisionCloudTextRecognizerOptions.Builder()
             .setLanguageHints(listOf("ja"))
             .build()
         val detector = FirebaseVision.getInstance().getCloudTextRecognizer(options)
 
+        val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
         detector.processImage(FirebaseVisionImage.fromBitmap(bitmap))
             .addOnSuccessListener { firebaseVisionText ->
                 Log.d(TAG, "recognized text = ${firebaseVisionText.text}")
-                showResultOnBottomSheet(firebaseVisionText.text)
+                showResultOnBottomSheet(firebaseVisionText.text, photoFile)
             }
             .addOnFailureListener { e ->
                 Log.d(TAG, "failed recognizing: errorMessage=${e.message}")
@@ -186,8 +186,9 @@ class MainActivity : AppCompatActivity() {
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
     }
 
-    private fun showResultOnBottomSheet(text: String) {
+    private fun showResultOnBottomSheet(text: String, photoFile: File) {
         resultTextView.text = text
+        Glide.with(capturedImageView).load(photoFile).into(capturedImageView as ImageView)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
